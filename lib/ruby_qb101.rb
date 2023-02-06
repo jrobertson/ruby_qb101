@@ -4,36 +4,19 @@
 
 # Description: Ruby related questions to ask Chat GPT. #experimental
 
+require 'yatoc'
 require 'polyrex-headings'
 
-QUESTIONS = <<-MARKDOWN
-
-title: Questions to ask when learning the programming language Ruby
-tags: ruby learning book questions answers
-
-# Questions to ask when learning the programming language Ruby
-
-## Introduction to Programming
-
-Write a table of contents for a programming language
-What is an expression in a programming language?
-What is a statement in a programming language?
-
-
-## Data types
-
-Give me an example of using an integer in the programming language Ruby.
-Give me an example of using a boolean in the programming language Ruby.
-
-
-MARKDOWN
 
 class Ruby_Qb101
 
-  def initialize(questions=QUESTIONS)
+  def initialize(questions_file=nil)
+    
+    questions_file ||= File.join(File.dirname(__FILE__), '..',
+                                'data', 'ruby_qb101.txt')
 
-    @questions = questions[/#.*/m]
-    s = '<?ph schema="book[title,tags]/section[x]"?>' + questions
+    s = File.read(questions_file)
+    @questions = s[/#.*/m]
     @px = PolyrexHeadings.new(s, debug: false).to_polyrex
 
   end
@@ -51,9 +34,20 @@ class Ruby_Qb101
     @questions
   end
   
+  def to_html()
+    Kramdown::Document.new(@questions).to_html
+  end
+  
+  def to_toc()
+    Yatoc.new(self.to_html(), min_sections: 1)    
+  end
+  
   def to_xml()
     @px.to_xml(pretty: true)
   end
 
 end
 
+#qb = Ruby_Qb101.new()
+#qb.to_md
+#qb.question('7')
