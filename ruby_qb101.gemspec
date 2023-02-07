@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'ruby_qb101'
-  s.version = '0.2.0'
+  s.version = '0.3.0'
   s.summary = 'Ruby related questions to ask Chat GPT. #experimental'
   s.authors = ['James Robertson']
   s.files = Dir["lib/ruby_qb101.rb", "data/ruby_qb101.txt"]
