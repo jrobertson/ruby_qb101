@@ -1,22 +1,20 @@
 <?ph schema="book[title,tags]/section[x]"?>
 
 title: Questions to ask when learning the programming language Ruby
-tags: ruby learning book questions answers
+tags: ruby learning book questions answers chatgpt
 
-# Questions to ask when learning the programming language Ruby
+# Ruby: Questions 
 
 ## Introduction to Programming
 
 Write a table of contents for a programming language
-
 What is an expression in a programming language?
-
 What is a statement in a programming language?
 
 
 ## Data types
 
+What are the different data types in the programming language Ruby?
 Give me an example of using an integer in the programming language Ruby.
-
 Give me an example of using a boolean in the programming language Ruby.
 
