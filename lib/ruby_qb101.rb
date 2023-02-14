@@ -25,7 +25,7 @@ class Ruby_Qb101
     @px = PolyrexHeadings.new(s, debug: false).to_polyrex
 
   end
-
+  
   def question(id)
 
     found = @px.find_by_id(id.to_s)
@@ -57,6 +57,17 @@ class Ruby_Qb101
     Kramdown::Document.new(s).to_html
   end
   
+  def to_prompts()
+    
+    # generates a Dynarex file for use with ChatAway class in ChaptGpt2023
+    dx = Dynarex.new('prompts/entry(prompt,type, redo)')
+    
+    questions().each {|x| dx.create({prompt: x, type: 'completion'}) }
+    
+    return dx
+
+  end
+  
   def to_toc()
     Yatoc.new(self.to_html(), min_sections: 1)    
   end
@@ -69,6 +80,8 @@ end
 
 class Ruby_Ab101
 
+  # note: the ab_xml file can be in CGRecorder log XML format
+  
   def initialize(qb_txt, ab_xml=nil, filepath: '.', debug: false)
     
     @debug = debug
@@ -81,7 +94,7 @@ class Ruby_Ab101
     
     @qb.questions.each {|q| @dx.create({question: q}) }
     
-    if ab_xml then
+    if ab_xml and File.exist?(ab_xml) then
       
       dx = Dynarex.new(ab_xml)
       
@@ -90,16 +103,36 @@ class Ruby_Ab101
       
       @qb.questions.each do |q|
         
-        found = dx.find_by_question q
-        
-        if found then
-          rx = @dx.find_by_question q
-          rx.answer = found.answer 
-        end        
+        puts 'q: ' + q.inspect if @debug
+  
+        # note: the find_by ... method is passing in a regex because passing 
+        #       in a String causes the xpath to execute which is known to have 
+        #       a serious bug when the value contains *and*.
+        if dx.schema =~ /question, answer/ then
+
+          found = dx.find_by_question /#{q}/
+          
+          if found then
+            rx = @dx.find_by_question /#{q}/
+            rx.answer = found.answer 
+          end
+          
+        else
+          
+          #puts 'dx: ' + dx.to_xml(pretty: true) if @debug
+          found = dx.find_by_prompt /#{q}/
+          puts 'found: ' + found.inspect if @debug
+          
+          if found then
+            rx = @dx.find_by_question /#{q}/
+            rx.answer = found.result 
+          end
+          
+        end
         
       end
       
-      @dx.save ab_xml
+      #@dx.save ab_xml
       
     end
     
@@ -118,8 +151,11 @@ class Ruby_Ab101
     puts 'answers: ' + answers.inspect if @debug
     
     doc.root.xpath('//p').each.with_index do |para, i|
-      e = Rexle::Element.new('p', attributes: {class: 'answer'}).add_text answers[i]
+      
+      e = Rexle::Element.new('p', attributes: {class: 'answer'})\
+          .add_text answers[i]
       para.insert_after e
+      
     end
     
     doc.root.xml pretty: true
