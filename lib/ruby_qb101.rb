@@ -5,164 +5,35 @@
 # Description: Ruby related questions to ask Chat GPT. #experimental
 # see https://github.com/jrobertson/ruby_qb101/blob/main/data/ruby_qb101.txt for questions used
 
-require 'yatoc'
-require 'polyrex-headings'
+require 'qb101'
+
 
 
 # This file contains 2 classes, the question book class and 
 # the answer book class.
 
 
-class Ruby_Qb101
+class Ruby_Qb101 < Qb101
 
   def initialize(questions_file=nil)
     
     questions_file ||= File.join(File.dirname(__FILE__), '..',
                                 'data', 'ruby_qb101.txt')
 
-    s = File.read(questions_file)
-    @questions = s[/#.*/m]
-    @px = PolyrexHeadings.new(s, debug: false).to_polyrex
+    super(questions_file)
 
   end
   
-  def question(id)
-
-    found = @px.find_by_id(id.to_s)
-    found.x if found
-
-  end
-
-  alias q question
-  
-  def questions()
-    doc = Rexle.new('<root>' + self.to_html + '</root>')
-    a = doc.root.xpath('//p/text()').map(&:to_s)    
-  end
-
-  def tags()
-    @px.summary.tags
-  end
-  
-  def title()
-    @px.summary.title
-  end
-  
-  def to_md()
-    @questions
-  end
-  
-  def to_html()
-    s = @questions.strip.gsub(/^([^\n#].[^\n]+)[\n]+/,'\1' + "\n\n")
-    Kramdown::Document.new(s).to_html
-  end
-  
-  def to_prompts()
-    
-    # generates a Dynarex file for use with ChatAway class in ChaptGpt2023
-    dx = Dynarex.new('prompts/entry(prompt,type, redo)')
-    
-    questions().each {|x| dx.create({prompt: x, type: 'completion'}) }
-    
-    return dx
-
-  end
-  
-  def to_toc()
-    Yatoc.new(self.to_html(), min_sections: 1)    
-  end
-  
-  def to_xml()
-    @px.to_xml(pretty: true)
-  end
-
 end
 
-class Ruby_Ab101
+class Ruby_Ab101 < Ab101
 
   # note: the ab_xml file can be in CGRecorder log XML format
   
-  def initialize(qb_txt, ab_xml=nil, filepath: '.', debug: false)
-    
-    @debug = debug
-    
-    @qb = Ruby_Qb101.new(qb_txt)
-    
-    @dx = Dynarex.new('book[title, tags]/item(question, answer)')
-    @dx.title = @qb.title
-    @dx.tags = @qb.tags
-    
-    @qb.questions.each {|q| @dx.create({question: q}) }
-    
-    if ab_xml and File.exist?(ab_xml) then
-      
-      dx = Dynarex.new(ab_xml)
-      
-      # using each question, find the associated answer and 
-      # add it the main record
-      
-      @qb.questions.each do |q|
+  def initialize(qb, ab_xml=nil, filepath: '.', debug: false)
         
-        puts 'q: ' + q.inspect if @debug
-  
-        # note: the find_by ... method is passing in a regex because passing 
-        #       in a String causes the xpath to execute which is known to have 
-        #       a serious bug when the value contains *and*.
-        if dx.schema =~ /question, answer/ then
-
-          found = dx.find_by_question /#{q}/
-          
-          if found then
-            rx = @dx.find_by_question /#{q}/
-            rx.answer = found.answer 
-          end
-          
-        else
-          
-          #puts 'dx: ' + dx.to_xml(pretty: true) if @debug
-          found = dx.find_by_prompt /#{q}/
-          puts 'found: ' + found.inspect if @debug
-          
-          if found then
-            rx = @dx.find_by_question /#{q}/
-            rx.answer = found.result 
-          end
-          
-        end
-        
-      end
-      
-      #@dx.save ab_xml
-      
-    end
-    
+    super(qb, ab_xml, filepath: filepath, debug: debug)
   end
 
-  def save(filename)
-    @dx.save filename
-  end
-  
-  def to_html()
-
-    doc = Rexle.new('<body>' + @qb.to_html.gsub(/<p>[^>]+>/,'<div>\0</div>') \
-                    + '</body>')
-    answers = @dx.all.map(&:answer)
-    
-    puts 'answers: ' + answers.inspect if @debug
-    
-    doc.root.xpath('//p').each.with_index do |para, i|
-      
-      e = Rexle::Element.new('p', attributes: {class: 'answer'})\
-          .add_text answers[i]
-      para.insert_after e
-      
-    end
-    
-    doc.root.xml pretty: true
-  end
-  
-  def to_xml()
-    @dx.to_xml(pretty: true)
-  end
 
 end
